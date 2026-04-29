@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mind-reading machine</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne+Mono&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --border: #2a2a2a;
+      --accent: #c8f135;
+      --text: #e8e8e8;
+      --muted: #555;
+      --radius: 4px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      overflow: hidden;
+    }
+
+    /* subtle grid bg */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3rem 3.5rem;
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .label {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--text);
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .field-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+
+    input[type="number"] {
+      font-family: 'Syne Mono', monospace;
+      font-size: 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 0.85rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    input[type="number"]::placeholder {
+      color: var(--muted);
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+    }
+
+    input[type="number"] { -moz-appearance: textfield; }
+
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    button#startBtn {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: #0d0d0d;
+      border: none;
+      border-radius: var(--radius);
+      padding: 0.9rem 2rem;
+      cursor: pointer;
+      align-self: flex-start;
+      transition: opacity 0.2s, transform 0.1s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button#startBtn:hover:not(:disabled) {
+      opacity: 0.88;
+    }
+
+    button#startBtn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    button#startBtn:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    button#againBtn {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.9rem 2rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, transform 0.1s;
+    }
+
+    button#againBtn:hover {
+      color: var(--text);
+      border-color: var(--text);
+    }
+
+    button#againBtn:active {
+      transform: scale(0.97);
+    }
+
+    /* Loading bar */
+    .loader-wrap {
+      display: none;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .loader-wrap.active { display: flex; }
+
+    .loader-track {
+      height: 3px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .loader-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width 0.1s linear;
+    }
+
+    .loader-status {
+      font-family: 'Syne Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    /* Output */
+    .output-wrap {
+      display: none;
+      flex-direction: column;
+      gap: 0.5rem;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .output-wrap.active { display: flex; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .output-box {
+      font-family: 'Syne Mono', monospace;
+      font-size: 1.05rem;
+      color: var(--accent);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1rem 1.2rem;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div>
+      <!--<div class="label">Input processor</div>-->
+      <h1><span>Mind</span>-reading<br>machine</h1>
+    </div>
+
+    <div class="field-wrap" id="fieldWrap">
+      <div class="label">Think of a number</div>
+      <input type="number" id="userInput" placeholder="Type the number here" />
+    </div>
+
+    <div class="btn-row">
+      <button id="startBtn">Read my mind</button>
+      <button id="againBtn" style="display:none">Again</button>
+    </div>
+
+    <div class="loader-wrap" id="loaderWrap">
+      <div class="label">Reading your mind…</div>
+      <div class="loader-track">
+        <div class="loader-fill" id="loaderFill"></div>
+      </div>
+      <div class="loader-status" id="loaderStatus">Initializing…</div>
+    </div>
+
+    <div class="output-wrap" id="outputWrap">
+      <div class="label">The number you thought of was</div>
+      <div class="output-box" id="outputBox"></div>
+    </div>
+  </div>
+
+  <script>
+    const btn        = document.getElementById('startBtn');
+    const againBtn   = document.getElementById('againBtn');
+    const input      = document.getElementById('userInput');
+    const fieldWrap  = document.getElementById('fieldWrap');
+    const loaderWrap = document.getElementById('loaderWrap');
+    const loaderFill = document.getElementById('loaderFill');
+    const loaderStatus = document.getElementById('loaderStatus');
+    const outputWrap = document.getElementById('outputWrap');
+    const outputBox  = document.getElementById('outputBox');
+
+    const steps = [
+      { pct: 9, msg: 'Connecting to AI servers…' },
+      { pct: 18, msg: 'Connection successful' },
+      { pct: 27, msg: 'Hacking pentagon…' },
+      { pct: 35, msg: 'Stealing secret developments…' },
+      { pct: 43, msg: 'Success' },
+      { pct: 51, msg: 'Summoning spirits…' },
+      { pct: 60, msg: 'Calling Elon Musk…' },
+      { pct: 70, msg: 'Contacting NASA…' },
+      { pct: 79, msg: 'Consulting with the University of Cambridge…' },
+      { pct: 85, msg: 'Using secret developments…' },
+      { pct: 90, msg: 'Reading your mind…' },
+      { pct: 100, msg: 'Done.' },
+    ];
+
+    btn.addEventListener('click', () => {
+      const value = input.value.trim();
+      if (!value || isNaN(value)) {
+        input.focus();
+        input.style.borderColor = '#e05252';
+        setTimeout(() => input.style.borderColor = '', 600);
+        return;
+      }
+
+      // hide field & start button
+      fieldWrap.style.display = 'none';
+      btn.style.display = 'none';
+      againBtn.style.display = 'none';
+      outputWrap.classList.remove('active');
+      loaderFill.style.width = '0%';
+      loaderStatus.textContent = 'Starting up…';
+      loaderWrap.classList.add('active');
+
+      const TOTAL = 15000;
+      const interval = TOTAL / steps.length;
+      let i = 0;
+
+      const tick = () => {
+        if (i >= steps.length) {
+          loaderWrap.classList.remove('active');
+          outputBox.textContent = value;
+          outputWrap.classList.add('active');
+          againBtn.style.display = 'inline-block';
+          return;
+        }
+        const step = steps[i++];
+        loaderFill.style.width = step.pct + '%';
+        loaderStatus.textContent = step.msg;
+        setTimeout(tick, interval);
+      };
+
+      setTimeout(tick, 120);
+    });
+
+    againBtn.addEventListener('click', () => {
+      // reset everything
+      input.value = '';
+      fieldWrap.style.display = 'flex';
+      outputWrap.classList.remove('active');
+      loaderWrap.classList.remove('active');
+      loaderFill.style.width = '0%';
+      againBtn.style.display = 'none';
+      btn.style.display = 'inline-block';
+      btn.disabled = false;
+      input.focus();
+    });
+  </script>
+</body>
+</html>
