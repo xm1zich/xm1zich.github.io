@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>xm1zich's File Repository</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,300&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --border: #222222;
+      --accent: #e8ff47;
+      --accent-dim: #b8cc3a;
+      --text: #f0f0f0;
+      --muted: #555;
+      --danger: #ff4747;
+      --success: #47ffaa;
+      --mono: 'DM Mono', monospace;
+      --sans: 'Fraunces', serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255,255,255,0.012) 2px,
+        rgba(255,255,255,0.012) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 0 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      background: rgba(10,10,10,0.95);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: var(--sans);
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+      color: var(--accent);
+    }
+
+    .logo span { color: var(--text); }
+
+    .header-meta {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      margin-right: 8px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 64px 48px;
+    }
+
+    .page-title {
+      font-family: var(--sans);
+      font-size: clamp(36px, 6vw, 72px);
+      font-weight: 800;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      margin-bottom: 16px;
+    }
+
+    .page-title em {
+      color: var(--accent);
+      font-style: normal;
+    }
+
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 64px;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+      margin-bottom: 48px;
+      overflow: hidden;
+    }
+
+    .stat {
+      flex: 1;
+      padding: 20px 24px;
+      border-right: 1px solid var(--border);
+    }
+
+    .stat:last-child { border-right: none; }
+
+    .stat-val {
+      font-family: var(--sans);
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* Search & filter */
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+      align-items: center;
+    }
+
+    .search-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    input[type="search"] {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 12px 14px 12px 40px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="search"]::placeholder { color: var(--muted); }
+    input[type="search"]:focus { border-color: var(--accent); }
+
+    .filter-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 12px 18px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* File table */
+    .file-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+    }
+
+    .file-table thead tr {
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .file-table th {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      padding: 14px 20px;
+      text-align: left;
+      font-weight: 400;
+    }
+
+    .file-table tbody tr {
+      border-bottom: 1px solid #1a1a1a;
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+
+    .file-table tbody tr:last-child { border-bottom: none; }
+
+    .file-table tbody tr:hover {
+      background: rgba(232, 255, 71, 0.04);
+    }
+
+    .file-table tbody tr:hover .dl-btn { opacity: 1; }
+
+    .file-table td {
+      padding: 18px 20px;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    .file-icon {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .file-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .file-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .file-desc {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 9px;
+      padding: 3px 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      border: 1px solid;
+    }
+
+    .badge-pdf   { color: #ff7b47; border-color: #ff7b4744; background: #ff7b4711; }
+    .badge-zip   { color: #47b4ff; border-color: #47b4ff44; background: #47b4ff11; }
+    .badge-xlsx  { color: #47ff8c; border-color: #47ff8c44; background: #47ff8c11; }
+    .badge-pptx  { color: #ff47c8; border-color: #ff47c844; background: #ff47c811; }
+    .badge-mp4   { color: #c847ff; border-color: #c847ff44; background: #c847ff11; }
+    .badge-docx  { color: #47d4ff; border-color: #47d4ff44; background: #47d4ff11; }
+    .badge-png   { color: #ffd447; border-color: #ffd44744; background: #ffd44711; }
+    .badge-json  { color: #a8ff47; border-color: #a8ff4744; background: #a8ff4711; }
+
+    .file-size {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .file-date {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .dl-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 10px 16px;
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .dl-btn:hover { background: var(--accent-dim); }
+
+    .dl-btn:active { transform: scale(0.97); }
+
+    /* Progress toast */
+    #toast-container {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 9999;
+    }
+
+    .toast {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 16px 20px;
+      min-width: 300px;
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(40px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+
+    .toast-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .toast-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+
+    .toast-status {
+      font-size: 10px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .progress-track {
+      height: 3px;
+      background: var(--border);
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+      display: none;
+    }
+
+    .empty-state .icon { font-size: 40px; margin-bottom: 16px; }
+    .empty-state p { font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 64px;
+    }
+
+    footer span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    @media (max-width: 768px) {
+      header, main, footer { padding-left: 20px; padding-right: 20px; }
+      .stats-bar { display: none; }
+      .file-table th:nth-child(3),
+      .file-table td:nth-child(3),
+      .file-table th:nth-child(4),
+      .file-table td:nth-child(4) { display: none; }
+      .dl-btn { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">VAULT<span>.</span></div>
+  <div class="header-meta"><span class="status-dot"></span>Server Online</div>
+</header>
+
+<main>
+  <h1 class="page-title">File<br/><em>Repository</em></h1>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-val" id="stat-files"></div>
+      <div class="stat-label">Total Files</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-size"></div>
+      <div class="stat-label">Data Stored</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-dl">0</div>
+      <div class="stat-label">Downloads</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">v2.4</div>
+      <div class="stat-label">Repository</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="search" id="search" placeholder="Search files…" oninput="filterFiles()" />
+    </div>
+    <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-btn" onclick="setFilter('document', this)">Docs</button>
+    <button class="filter-btn" onclick="setFilter('archive', this)">Archives</button>
+    <button class="filter-btn" onclick="setFilter('media', this)">Media</button>
+    <button class="filter-btn" onclick="setFilter('data', this)">Data</button>
+  </div>
+
+  <table class="file-table" id="fileTable">
+    <thead>
+      <tr>
+        <th>File</th>
+        <th>Type</th>
+        <th>Size</th>
+        <th>Modified</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="fileBody"></tbody>
+  </table>
+
+  <div class="empty-state" id="emptyState">
+    <div class="icon">◻</div>
+    <p>No files match your search</p>
+  </div>
+
+
+</main>
+
+<footer>
+  <span>XM1ZICH's File Repository</span>
+  <span id="footer-time"></span>
+</footer>
+
+<div id="toast-container"></div>
+
+<script>
+  // ── Sample file data ──────────────────────────────────────────────────
+  const FILES = [
+    {
+      name: 'neoforge_mods.rar',
+      desc: 'NeoForge 1.21.1 Modpack',
+      type: 'zip', category: 'archive',
+      size: '112 MB', bytes: 118460475,
+      date: '12-05-2026',
+      icon: '🗃️',
+      url: 'files/neoforge_mods.rar'
+    },
+  ];
+
+  let activeFilter = 'all';
+  let dlCount = 0;
+
+  // ── Render ────────────────────────────────────────────────────────────
+  function renderFiles(list) {
+    const tbody = document.getElementById('fileBody');
+    const empty = document.getElementById('emptyState');
+
+    tbody.innerHTML = '';
+
+    if (!list.length) {
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    list.forEach(f => {
+      const tr = document.createElement('tr');
+      tr.dataset.category = f.category;
+      tr.dataset.name = f.name.toLowerCase();
+      tr.innerHTML = `
+        <td>
+          <div class="file-name-cell">
+            <div class="file-icon">${f.icon}</div>
+            <div>
+              <div class="file-name">${f.name}</div>
+              <div class="file-desc">${f.desc}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="badge badge-${f.type}">${f.type.toUpperCase()}</span></td>
+        <td class="file-size">${f.size}</td>
+        <td class="file-date">${f.date}</td>
+        <td>
+          <button class="dl-btn" onclick="startDownload(event, '${f.name}', ${f.bytes}, '${f.url}')">
+            ↓ Download
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── Filter logic ──────────────────────────────────────────────────────
+  function getVisible() {
+    const q = document.getElementById('search').value.toLowerCase();
+    return FILES.filter(f => {
+      const matchCat = activeFilter === 'all' || f.category === activeFilter;
+      const matchQ   = f.name.toLowerCase().includes(q) || f.desc.toLowerCase().includes(q);
+      return matchCat && matchQ;
+    });
+  }
+
+  function filterFiles() { renderFiles(getVisible()); }
+
+  function setFilter(cat, btn) {
+    activeFilter = cat;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterFiles();
+  }
+
+  // ── Download simulation ───────────────────────────────────────────────
+  function startDownload(e, name, bytes, url) {
+  e.stopPropagation();
+  if (url === '#') return; // no real URL, do nothing
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+
+  dlCount++;
+  document.getElementById('stat-dl').textContent = dlCount;
+  }
+
+  // ── Footer clock ──────────────────────────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('footer-time').textContent =
+      now.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── Init ──────────────────────────────────────────────────────────────
+  renderFiles(FILES);
+  document.getElementById('stat-files').textContent = FILES.length;
+
+  const totalBytes = FILES.reduce((sum, f) => sum + f.bytes, 0);
+  document.getElementById('stat-size').textContent = formatBytes(totalBytes);
+
+  function formatBytes(bytes) {
+    if (bytes >= 1e9) return (bytes / 1073741824).toFixed(2) + ' GB';
+    if (bytes >= 1e6) return (bytes / 1048576).toFixed(1) + ' MB';
+    if (bytes >= 1e3) return (bytes / 1024).toFixed(0) + ' KB';
+   return bytes + ' B';
+  }
+</script>
+</body>
+</html>
