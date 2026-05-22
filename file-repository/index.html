@@ -31,7 +31,6 @@
       overflow-x: hidden;
     }
 
-    /* Scanline overlay */
     body::before {
       content: '';
       position: fixed;
@@ -60,6 +59,7 @@
       -webkit-backdrop-filter: blur(8px);
       backdrop-filter: blur(8px);
       z-index: 100;
+      gap: 20px;
     }
 
     .logo {
@@ -68,15 +68,119 @@
       font-size: 22px;
       letter-spacing: -0.02em;
       color: var(--accent);
+      white-space: nowrap;
+    }
+    .logo span { color: var(--text); }
+
+    .site-nav {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: auto;
     }
 
-    .logo span { color: var(--text); }
+    .nav-home {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 7px 14px;
+      border: 1px solid var(--border);
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      white-space: nowrap;
+    }
+    .nav-home:hover {
+      color: var(--text);
+      border-color: #444;
+    }
+
+    .nav-dd { position: relative; }
+
+    .nav-dd-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      background: none;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 7px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    .nav-dd-btn .chevron {
+      display: inline-block;
+      transition: transform 0.2s;
+    }
+    .nav-dd-btn:hover {
+      background: var(--accent);
+      color: #000;
+    }
+    .nav-dd.open .nav-dd-btn {
+      background: var(--accent);
+      color: #000;
+    }
+    .nav-dd.open .nav-dd-btn .chevron {
+      transform: rotate(180deg);
+    }
+
+    .nav-dd-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background: #0f0f0f;
+      border: 1px solid var(--border);
+      min-width: 220px;
+      display: none;
+      flex-direction: column;
+      z-index: 500;
+      animation: menuFade 0.15s ease;
+    }
+    .nav-dd.open .nav-dd-menu { display: flex; }
+
+    @keyframes menuFade {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .nav-dd-menu a {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+      transition: color 0.15s, background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-dd-menu a:last-child { border-bottom: none; }
+    .nav-dd-menu a:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+    .nav-dd-menu a.active { color: var(--accent); }
+    .nav-dd-menu a .page-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .nav-dd-menu a:nth-child(1) .page-dot { background: #e8ff47; }
+    .nav-dd-menu a:nth-child(2) .page-dot { background: #e04aff; }
+    .nav-dd-menu a:nth-child(3) .page-dot { background: #e04aff; opacity: 0.6; }
 
     .header-meta {
       font-size: 11px;
       color: var(--muted);
       letter-spacing: 0.12em;
       text-transform: uppercase;
+      white-space: nowrap;
     }
 
     .status-dot {
@@ -121,7 +225,6 @@
       margin-bottom: 64px;
     }
 
-    /* Stats bar */
     .stats-bar {
       display: flex;
       gap: 0;
@@ -135,7 +238,6 @@
       padding: 20px 24px;
       border-right: 1px solid var(--border);
     }
-
     .stat:last-child { border-right: none; }
 
     .stat-val {
@@ -154,7 +256,6 @@
       letter-spacing: 0.1em;
     }
 
-    /* Search & filter */
     .toolbar {
       display: flex;
       gap: 12px;
@@ -187,7 +288,6 @@
       outline: none;
       transition: border-color 0.2s;
     }
-
     input[type="search"]::placeholder { color: var(--muted); }
     input[type="search"]:focus { border-color: var(--accent); }
 
@@ -204,13 +304,11 @@
       transition: all 0.15s;
       white-space: nowrap;
     }
-
     .filter-btn:hover, .filter-btn.active {
       border-color: var(--accent);
       color: var(--accent);
     }
 
-    /* File table */
     .file-table {
       width: 100%;
       border-collapse: collapse;
@@ -237,13 +335,8 @@
       transition: background 0.15s;
       cursor: pointer;
     }
-
     .file-table tbody tr:last-child { border-bottom: none; }
-
-    .file-table tbody tr:hover {
-      background: rgba(232, 255, 71, 0.04);
-    }
-
+    .file-table tbody tr:hover { background: rgba(232, 255, 71, 0.04); }
     .file-table tbody tr:hover .dl-btn { opacity: 1; }
 
     .file-table td {
@@ -300,17 +393,8 @@
     .badge-png   { color: #ffd447; border-color: #ffd44744; background: #ffd44711; }
     .badge-json  { color: #a8ff47; border-color: #a8ff4744; background: #a8ff4711; }
 
-    .file-size {
-      font-size: 12px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-
-    .file-date {
-      font-size: 11px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
+    .file-size { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .file-date { font-size: 11px; color: var(--muted); white-space: nowrap; }
 
     .dl-btn {
       display: flex;
@@ -330,12 +414,9 @@
       transition: all 0.15s;
       white-space: nowrap;
     }
-
     .dl-btn:hover { background: var(--accent-dim); }
-
     .dl-btn:active { transform: scale(0.97); }
 
-    /* Progress toast */
     #toast-container {
       position: fixed;
       bottom: 32px;
@@ -383,27 +464,15 @@
       letter-spacing: 0.08em;
     }
 
-    .progress-track {
-      height: 3px;
-      background: var(--border);
-      overflow: hidden;
-    }
+    .progress-track { height: 3px; background: var(--border); overflow: hidden; }
+    .progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s linear; }
 
-    .progress-bar {
-      height: 100%;
-      background: var(--accent);
-      width: 0%;
-      transition: width 0.1s linear;
-    }
-
-    /* Empty state */
     .empty-state {
       text-align: center;
       padding: 80px 20px;
       color: var(--muted);
       display: none;
     }
-
     .empty-state .icon { font-size: 40px; margin-bottom: 16px; }
     .empty-state p { font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; }
 
@@ -415,7 +484,6 @@
       align-items: center;
       margin-top: 64px;
     }
-
     footer span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
 
     @media (max-width: 768px) {
@@ -426,6 +494,7 @@
       .file-table th:nth-child(4),
       .file-table td:nth-child(4) { display: none; }
       .dl-btn { opacity: 1; }
+      .header-meta { display: none; }
     }
   </style>
 </head>
@@ -433,6 +502,19 @@
 
 <header>
   <div class="logo">VAULT<span>.</span></div>
+
+  <nav class="site-nav">
+    <a href="/" class="nav-home">Main</a>
+    <div class="nav-dd" id="navDd">
+      <button class="nav-dd-btn" id="navDdBtn">Pages <span class="chevron">▾</span></button>
+      <div class="nav-dd-menu">
+        <a href="/file-repository/" class="active"><span class="page-dot"></span>File Repository</a>
+        <a href="/mind-reading/en/"><span class="page-dot"></span>Mind Reading — EN</a>
+        <a href="/mind-reading/ru/"><span class="page-dot"></span>Mind Reading — RU</a>
+      </div>
+    </div>
+  </nav>
+
   <div class="header-meta"><span class="status-dot"></span>Server Online</div>
 </header>
 
@@ -487,8 +569,6 @@
     <div class="icon">◻</div>
     <p>No files match your search</p>
   </div>
-
-
 </main>
 
 <footer>
@@ -499,7 +579,6 @@
 <div id="toast-container"></div>
 
 <script>
-  // ── Sample file data ──────────────────────────────────────────────────
   const FILES = [
     {
       name: 'neoforge_mods.rar',
@@ -515,19 +594,12 @@
   let activeFilter = 'all';
   let dlCount = 0;
 
-  // ── Render ────────────────────────────────────────────────────────────
   function renderFiles(list) {
     const tbody = document.getElementById('fileBody');
     const empty = document.getElementById('emptyState');
-
     tbody.innerHTML = '';
-
-    if (!list.length) {
-      empty.style.display = 'block';
-      return;
-    }
+    if (!list.length) { empty.style.display = 'block'; return; }
     empty.style.display = 'none';
-
     list.forEach(f => {
       const tr = document.createElement('tr');
       tr.dataset.category = f.category;
@@ -555,7 +627,6 @@
     });
   }
 
-  // ── Filter logic ──────────────────────────────────────────────────────
   function getVisible() {
     const q = document.getElementById('search').value.toLowerCase();
     return FILES.filter(f => {
@@ -574,21 +645,17 @@
     filterFiles();
   }
 
-  // ── Download simulation ───────────────────────────────────────────────
   function startDownload(e, name, bytes, url) {
-  e.stopPropagation();
-  if (url === '#') return; // no real URL, do nothing
-
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.click();
-
-  dlCount++;
-  document.getElementById('stat-dl').textContent = dlCount;
+    e.stopPropagation();
+    if (url === '#') return;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    dlCount++;
+    document.getElementById('stat-dl').textContent = dlCount;
   }
 
-  // ── Footer clock ──────────────────────────────────────────────────────
   function updateClock() {
     const now = new Date();
     document.getElementById('footer-time').textContent =
@@ -597,19 +664,22 @@
   updateClock();
   setInterval(updateClock, 1000);
 
-  // ── Init ──────────────────────────────────────────────────────────────
   renderFiles(FILES);
   document.getElementById('stat-files').textContent = FILES.length;
-
   const totalBytes = FILES.reduce((sum, f) => sum + f.bytes, 0);
   document.getElementById('stat-size').textContent = formatBytes(totalBytes);
-
   function formatBytes(bytes) {
     if (bytes >= 1e9) return (bytes / 1073741824).toFixed(2) + ' GB';
     if (bytes >= 1e6) return (bytes / 1048576).toFixed(1) + ' MB';
     if (bytes >= 1e3) return (bytes / 1024).toFixed(0) + ' KB';
-   return bytes + ' B';
+    return bytes + ' B';
   }
+
+  // Nav dropdown
+  const dd = document.getElementById('navDd');
+  const ddBtn = document.getElementById('navDdBtn');
+  ddBtn.addEventListener('click', e => { e.stopPropagation(); dd.classList.toggle('open'); });
+  document.addEventListener('click', () => dd.classList.remove('open'));
 </script>
 </body>
 </html>

@@ -14,8 +14,8 @@
       --bg: #0a0a08;
       --ink: #e8e4d9;
       --dim: #6b6860;
-      --accent-a: #c8f04a;   /* acid green — files */
-      --accent-b: #e04aff;   /* violet — mind */
+      --accent-a: #c8f04a;
+      --accent-b: #e04aff;
       --border: rgba(232,228,217,0.12);
     }
 
@@ -27,7 +27,6 @@
       overflow-x: hidden;
     }
 
-    /* ── grain overlay ── */
     body::before {
       content: '';
       position: fixed; inset: 0;
@@ -37,7 +36,6 @@
       z-index: 9999;
     }
 
-    /* ── layout ── */
     .shell {
       min-height: 100vh;
       display: grid;
@@ -47,22 +45,132 @@
       padding: 0 40px;
     }
 
-    /* ── header ── */
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 32px 0 28px;
+      padding: 24px 0 22px;
       border-bottom: 1px solid var(--border);
       animation: fadeUp 0.6s ease both;
+      gap: 24px;
+      z-index: 1000;
     }
+
     .logo {
       font-size: 11px;
       letter-spacing: 0.25em;
       text-transform: uppercase;
       color: var(--dim);
+      white-space: nowrap;
     }
     .logo strong { color: var(--ink); }
+
+    .site-nav {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: auto;
+    }
+
+    .nav-home {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink);
+      text-decoration: none;
+      padding: 7px 14px;
+      border: 1px solid var(--ink);
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .nav-home:hover {
+      background: var(--ink);
+      color: var(--bg);
+    }
+    .nav-home.active {
+      background: var(--ink);
+      color: var(--bg);
+    }
+
+    .nav-dd {
+      position: relative;
+    }
+
+    .nav-dd-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--dim);
+      padding: 7px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: border-color 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    .nav-dd-btn .chevron {
+      display: inline-block;
+      transition: transform 0.2s;
+      font-style: normal;
+    }
+    .nav-dd-btn:hover,
+    .nav-dd.open .nav-dd-btn {
+      border-color: rgba(232,228,217,0.4);
+      color: var(--ink);
+    }
+    .nav-dd.open .nav-dd-btn .chevron {
+      transform: rotate(180deg);
+    }
+
+    .nav-dd-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background: #0f0f0d;
+      border: 1px solid rgba(232,228,217,0.15);
+      min-width: 220px;
+      display: none;
+      flex-direction: column;
+      z-index: 500;
+      animation: menuFade 0.15s ease;
+    }
+    .nav-dd.open .nav-dd-menu {
+      display: flex;
+    }
+    @keyframes menuFade {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .nav-dd-menu a {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--dim);
+      text-decoration: none;
+      padding: 13px 18px;
+      border-bottom: 1px solid rgba(232,228,217,0.07);
+      transition: color 0.15s, background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-dd-menu a:last-child { border-bottom: none; }
+    .nav-dd-menu a:hover { color: var(--ink); background: rgba(255,255,255,0.03); }
+    .nav-dd-menu a .page-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .nav-dd-menu a:nth-child(1) .page-dot { background: var(--accent-a); }
+    .nav-dd-menu a:nth-child(2) .page-dot { background: var(--accent-b); }
+    .nav-dd-menu a:nth-child(3) .page-dot { background: var(--accent-b); opacity: 0.6; }
+
     .status {
       display: flex;
       align-items: center;
@@ -71,6 +179,7 @@
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--dim);
+      white-space: nowrap;
     }
     .dot {
       width: 6px; height: 6px;
@@ -79,7 +188,6 @@
       animation: pulse 2.4s ease-in-out infinite;
     }
 
-    /* ── hero ── */
     .hero {
       display: flex;
       flex-direction: column;
@@ -117,7 +225,6 @@
       margin-bottom: 80px;
     }
 
-    /* ── cards ── */
     .cards {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -191,7 +298,6 @@
     .card-a:hover .card-arrow { transform: translateX(0); color: var(--accent-a); }
     .card-b:hover .card-arrow { transform: translateX(0); color: var(--accent-b); }
 
-    /* accent lines on cards */
     .card-a .accent-line { background: var(--accent-a); }
     .card-b .accent-line { background: var(--accent-b); }
     .accent-line {
@@ -205,7 +311,6 @@
     }
     .card:hover .accent-line { transform: scaleX(1); }
 
-    /* ── footer ── */
     footer {
       border-top: 1px solid var(--border);
       padding: 28px 0 36px;
@@ -219,7 +324,6 @@
       animation: fadeUp 0.7s 0.3s ease both;
     }
 
-    /* ── animations ── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(18px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -231,13 +335,13 @@
 
     .cards { animation: fadeUp 0.7s 0.2s ease both; }
 
-    /* ── responsive ── */
     @media (max-width: 680px) {
       .shell { padding: 0 24px; }
       .cards { grid-template-columns: 1fr; }
       .card { padding: 36px 28px 44px; }
       .card-arrow { bottom: 28px; right: 28px; }
       h1 { font-size: 52px; }
+      .status { display: none; }
     }
   </style>
 </head>
@@ -246,6 +350,19 @@
 
     <header>
       <div class="logo"><strong>xm1zich.github.io</strong> &nbsp;/&nbsp; Main</div>
+
+      <nav class="site-nav">
+        <a href="/" class="nav-home active">Main</a>
+        <div class="nav-dd" id="navDd">
+          <button class="nav-dd-btn" id="navDdBtn">Pages <span class="chevron">▾</span></button>
+          <div class="nav-dd-menu">
+            <a href="/file-repository/"><span class="page-dot"></span>File Repository</a>
+            <a href="/mind-reading/en/"><span class="page-dot"></span>Mind Reading — EN</a>
+            <a href="/mind-reading/ru/"><span class="page-dot"></span>Mind Reading — RU</a>
+          </div>
+        </div>
+      </nav>
+
       <div class="status"><span class="dot"></span>Online</div>
     </header>
 
@@ -258,7 +375,6 @@
 
       <div class="cards">
 
-        <!-- File Repository -->
         <a href="/file-repository" class="card card-a">
           <span class="accent-line"></span>
           <div class="card-index">01 &nbsp;—&nbsp; Storage</div>
@@ -276,7 +392,6 @@
           <span class="card-arrow">→</span>
         </a>
 
-        <!-- Mind Reading -->
         <a href="/mind-reading/en" class="card card-b">
           <span class="accent-line"></span>
           <div class="card-index">02 &nbsp;—&nbsp; Inference</div>
@@ -306,5 +421,12 @@
     </footer>
 
   </div>
+
+  <script>
+    const dd = document.getElementById('navDd');
+    const btn = document.getElementById('navDdBtn');
+    btn.addEventListener('click', e => { e.stopPropagation(); dd.classList.toggle('open'); });
+    document.addEventListener('click', () => dd.classList.remove('open'));
+  </script>
 </body>
 </html>
