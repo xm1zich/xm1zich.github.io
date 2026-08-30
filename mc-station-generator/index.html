@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trackworks — Create Train Station Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#10141a;
+  --panel:#171d25;
+  --panel-2:#1e2630;
+  --line:#2a3441;
+  --line-soft:#232b36;
+  --copper:#c17a3d;
+  --copper-bright:#e8a25c;
+  --brass:#d3b273;
+  --parchment:#ece5d3;
+  --muted:#8592a3;
+  --muted-2:#5d6879;
+  --platform:#cdbfa1;
+  --platform-dk:#b6a582;
+  --track:#454c55;
+  --track-dk:#363c44;
+  --rail:#e4ddc9;
+  --gap:#1c232c;
+  --gap-dot:#333e4c;
+  --warn-a:#e8c14a;
+  --warn-b:#1b1f24;
+  --danger:#c85a4a;
+  --danger-bright:#e07362;
+  --good:#6fae8a;
+  --blueprint:#0d3350;
+  --blueprint-line:#1c5680;
+  --blueprint-line-bold:#2c729e;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--void);
+  color:var(--parchment);
+  font-family:'Inter',sans-serif;
+  font-size:13px;
+  min-height:100vh;
+}
+::selection{background:var(--copper);color:#1a1006;}
+h1,h2,h3{font-family:'Rajdhani',sans-serif; margin:0; letter-spacing:.02em;}
+.mono{font-family:'JetBrains Mono',monospace;}
+
+/* ---------- shell ---------- */
+.app{
+  display:grid;
+  grid-template-columns: 320px 1fr;
+  min-height:100vh;
+}
+@media (max-width: 880px){
+  .app{grid-template-columns:1fr;}
+}
+
+/* ---------- sidebar ---------- */
+.sidebar{
+  background:linear-gradient(180deg,var(--panel),var(--void) 90%);
+  border-right:1px solid var(--line);
+  padding:0 0 40px 0;
+  overflow-y:auto;
+}
+.brand{
+  padding:22px 20px 16px 20px;
+  border-bottom:1px solid var(--line);
+  position:relative;
+}
+.brand::after{
+  content:"";
+  position:absolute; left:20px; bottom:-1px; width:36px; height:2px;
+  background:var(--copper-bright);
+}
+.brand h1{
+  font-size:21px; font-weight:700; color:var(--parchment);
+  text-transform:uppercase; letter-spacing:.06em;
+}
+.brand h1 span{color:var(--copper-bright);}
+.brand p{
+  margin:5px 0 0 0; color:var(--muted); font-size:11.5px;
+  font-family:'JetBrains Mono',monospace; letter-spacing:.02em;
+}
+
+.module{
+  padding:16px 20px;
+  border-bottom:1px solid var(--line-soft);
+}
+.module h2{
+  font-size:12px; color:var(--copper-bright); text-transform:uppercase;
+  letter-spacing:.14em; font-weight:600; margin-bottom:12px;
+  display:flex; align-items:center; gap:8px;
+}
+.module h2::before{
+  content:""; width:7px; height:7px; background:var(--copper);
+  transform:rotate(45deg); flex-shrink:0;
+}
+.module h3{
+  font-size:10.5px; color:var(--muted); text-transform:uppercase;
+  letter-spacing:.1em; font-weight:600; margin:12px 0 6px 0;
+}
+.hint{color:var(--muted-2); font-size:11px; line-height:1.5; margin-top:6px;}
+
+.field{margin-bottom:11px;}
+.field label{
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-size:11.5px; color:var(--muted); margin-bottom:4px;
+}
+.field label b{
+  font-family:'JetBrains Mono',monospace; color:var(--parchment);
+  font-weight:600; font-size:12px;
+}
+.field input[type=number]{
+  width:100%; background:var(--panel-2); border:1px solid var(--line);
+  color:var(--parchment); padding:7px 9px; border-radius:3px;
+  font-family:'JetBrains Mono',monospace; font-size:13px;
+}
+.field input[type=number]:focus{outline:none; border-color:var(--copper-bright);}
+.field input[type=range]{width:100%; accent-color:var(--copper-bright);}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+.toggle-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:7px 0;
+}
+.toggle-row span{font-size:12px; color:var(--parchment);}
+.switch{
+  position:relative; width:36px; height:19px; flex-shrink:0;
+}
+.switch input{opacity:0; width:0; height:0; position:absolute;}
+.switch .track{
+  position:absolute; inset:0; background:var(--panel-2); border:1px solid var(--line);
+  border-radius:20px; transition:.15s; cursor:pointer;
+}
+.switch .track::after{
+  content:""; position:absolute; width:13px; height:13px; border-radius:50%;
+  background:var(--muted); top:2px; left:2px; transition:.15s;
+}
+.switch input:checked + .track{background:rgba(193,122,61,.28); border-color:var(--copper);}
+.switch input:checked + .track::after{background:var(--copper-bright); transform:translateX(17px);}
+
+button{
+  font-family:'Inter',sans-serif; cursor:pointer; border-radius:3px;
+  border:1px solid var(--line); background:var(--panel-2); color:var(--parchment);
+  padding:8px 10px; font-size:12px; font-weight:500; transition:.12s;
+}
+button:hover{border-color:var(--copper-bright); color:var(--copper-bright);}
+button:active{transform:translateY(1px);}
+button:disabled{opacity:.35; cursor:not-allowed;}
+button:disabled:hover{border-color:var(--line); color:var(--parchment);}
+.btn-primary{
+  background:linear-gradient(180deg,var(--copper-bright),var(--copper));
+  border-color:var(--copper); color:#1c1104; font-weight:600;
+}
+.btn-primary:hover{color:#1c1104; filter:brightness(1.08); border-color:var(--copper-bright);}
+.btn-block{width:100%;}
+.btn-ghost{background:transparent;}
+.btn-danger:hover{border-color:var(--danger-bright); color:var(--danger-bright);}
+.btn-row{display:flex; gap:8px; margin-top:8px;}
+.btn-row button{flex:1;}
+
+/* sequence editor */
+.seq-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px;}
+.seq-item{
+  display:flex; align-items:center; gap:8px;
+  background:var(--panel-2); border:1px solid var(--line); border-radius:4px;
+  padding:7px 8px;
+}
+.seq-item .swatch{width:9px; height:22px; border-radius:2px; flex-shrink:0;}
+.seq-item.platform .swatch{background:var(--platform);}
+.seq-item.track .swatch{background:var(--track); box-shadow:inset 0 0 0 1px var(--rail);}
+.seq-item .lbl{flex:1; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--parchment);}
+.seq-item .mini{
+  width:24px; height:24px; display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--line); background:var(--panel); border-radius:3px; font-size:11px;
+  color:var(--muted); flex-shrink:0; padding:0;
+}
+.seq-item .mini:hover{color:var(--copper-bright); border-color:var(--copper-bright);}
+.add-row{display:flex; gap:8px; margin-top:8px;}
+.add-row button{flex:1; font-size:11.5px;}
+
+/* brush palette */
+.brush-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:7px;}
+.brush{
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  padding:9px 4px; border:1px solid var(--line); background:var(--panel-2);
+  border-radius:4px; cursor:pointer; font-size:10px; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.04em;
+}
+.brush svg{width:18px; height:18px;}
+.brush.active{border-color:var(--copper-bright); color:var(--copper-bright); background:rgba(193,122,61,.14);}
+.brush:hover{border-color:var(--copper-bright);}
+
+/* ---------- main ---------- */
+.main{display:flex; flex-direction:column; min-height:100vh;}
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:14px 24px; border-bottom:1px solid var(--line); background:var(--panel);
+  flex-wrap:wrap;
+}
+.topbar .title-block{
+  border:1px solid var(--line); border-left:3px solid var(--copper-bright);
+  background:var(--panel-2); padding:8px 14px; border-radius:3px;
+}
+.topbar .title-block .t1{font-family:'Rajdhani',sans-serif; font-weight:700; font-size:14px; letter-spacing:.06em; color:var(--parchment);}
+.topbar .title-block .t2{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); margin-top:2px;}
+.topbar-controls{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+.zoom-wrap{display:flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--line); padding:6px 10px; border-radius:4px;}
+.zoom-wrap span{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); width:34px;}
+.zoom-wrap input[type=range]{width:100px;}
+
+.canvas-wrap{
+  flex:1; overflow:auto; padding:24px;
+  background:
+    radial-gradient(ellipse at top left, #142230 0%, var(--void) 55%);
+}
+.canvas-frame{
+  display:inline-block; background:var(--blueprint);
+  border:1px solid #14507a; border-radius:6px; padding:6px;
+  box-shadow:0 12px 40px -12px rgba(0,0,0,.6);
+}
+canvas{display:block; cursor:crosshair; border-radius:3px;}
+
+.legend{
+  display:flex; flex-wrap:wrap; gap:14px; padding:12px 24px;
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  background:var(--panel); font-size:11px; color:var(--muted);
+}
+.legend .item{display:flex; align-items:center; gap:6px;}
+.legend .sw{width:12px; height:12px; border-radius:2px; flex-shrink:0;}
+
+.manifest{
+  padding:18px 24px 30px 24px; background:var(--panel);
+}
+.manifest h2{
+  font-size:12px; color:var(--copper-bright); text-transform:uppercase;
+  letter-spacing:.14em; margin-bottom:12px; display:flex; align-items:center; gap:8px;
+}
+.manifest h2::before{content:""; width:7px; height:7px; background:var(--copper); transform:rotate(45deg);}
+.manifest-grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+  gap:1px; background:var(--line); border:1px solid var(--line); border-radius:4px; overflow:hidden;
+}
+.manifest-cell{background:var(--panel-2); padding:10px 14px;}
+.manifest-cell .k{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+.manifest-cell .v{font-family:'JetBrains Mono',monospace; font-size:18px; color:var(--brass); margin-top:2px; font-weight:600;}
+.manifest-note{margin-top:12px; color:var(--muted-2); font-size:11px; line-height:1.6; max-width:70ch;}
+
+.export-panel{
+  margin-top:16px; display:none;
+}
+.export-panel.open{display:block;}
+.export-panel textarea{
+  width:100%; height:220px; background:var(--void); color:var(--parchment);
+  border:1px solid var(--line); border-radius:4px; padding:12px;
+  font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.5; resize:vertical;
+}
+
+.scrollbar-note{color:var(--muted-2); font-size:10.5px; margin-top:8px;}
+
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-track{background:var(--void);}
+::-webkit-scrollbar-thumb{background:var(--line); border-radius:5px;}
+::-webkit-scrollbar-thumb:hover{background:var(--copper);}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>TRACK<span>WORKS</span></h1>
+      <p>CREATE MOD · STATION PLATFORM GENERATOR</p>
+    </div>
+
+    <div class="module">
+      <h2>Dimensions</h2>
+      <div class="field">
+        <label>Station length <b id="lenVal">32</b></label>
+        <input type="number" id="length" min="4" max="256" value="32">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Platform width <b id="pwVal">5</b></label>
+          <input type="number" id="platformWidth" min="1" max="15" value="5">
+        </div>
+        <div class="field">
+          <label>Platform height <b id="phVal">1</b></label>
+          <input type="number" id="platformHeight" min="1" max="4" value="1">
+        </div>
+      </div>
+      <div class="field">
+        <label>Platform ↔ track distance <b id="gpVal">2</b></label>
+        <input type="number" id="gapPT" min="0" max="8" value="1">
+      </div>
+      <h3>Advanced</h3>
+      <div class="row2">
+        <div class="field">
+          <label>Track width <b id="twVal">3</b></label>
+          <input type="number" id="trackWidth" min="3" max="3" value="3">
+        </div>
+        <div class="field">
+          <label>Track ↔ track gap <b id="ttVal">2</b></label>
+          <input type="number" id="gapTT" min="0" max="8" value="3">
+        </div>
+      </div>
+    </div>
+
+    <div class="module">
+      <h2>Tracks &amp; Platforms</h2>
+      <div class="row2">
+        <div class="field">
+          <label>Tracks <b id="ntVal">2</b></label>
+          <input type="number" id="numTracks" min="1" max="32" value="2">
+        </div>
+        <div class="field">
+          <label>Platforms <b id="npVal">3</b></label>
+          <input type="number" id="numPlatforms" min="0" max="16" value="2">
+        </div>
+      </div>
+      <div class="hint">Changing these rebuilds the cross-section below in the standard side-platform arrangement. Fine-tune it manually after.</div>
+    </div>
+
+    <div class="module">
+      <h2>Layout Editor</h2>
+      <ul class="seq-list" id="seqList"></ul>
+      <div class="add-row">
+        <button id="addPlatform">+ Platform</button>
+        <button id="addTrack">+ Track</button>
+      </div>
+      <div class="hint">Reorder with ◀ ▶, remove with ✕. This is the exact cross-section, edge to edge.</div>
+    </div>
+
+    <div class="module">
+      <h2>Fittings</h2>
+      <div class="brush-grid" id="brushGrid">
+        <div class="brush active" data-brush="none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 16M20 4L4 20"/></svg>
+          Select
+        </div>
+        <div class="brush" data-brush="pillar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="18"/></svg>
+          Pillar
+        </div>
+        <div class="brush" data-brush="lamp">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="5"/><path d="M12 14v7"/></svg>
+          Lamp
+        </div>
+        <div class="brush" data-brush="bench">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M5 12v6M19 12v6M7 12V8h10v4"/></svg>
+          Bench
+        </div>
+        <div class="brush" data-brush="stairs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21v-4h4v-4h4v-4h4v-4h4"/></svg>
+          Stairs
+        </div>
+        <div class="brush" data-brush="eraser">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13l-7 7H6l-3-3 10-10 8 8z"/><path d="M9 17L4 12"/></svg>
+          Erase
+        </div>
+      </div>
+      <div class="hint">Click platform tiles in the preview to place fittings with the selected brush.</div>
+
+      <h3>Auto-place</h3>
+      <div class="row2">
+        <div class="field">
+          <label>Pillar spacing <b id="psVal">6</b></label>
+          <input type="number" id="pillarSpacing" min="2" max="30" value="6">
+        </div>
+        <div class="field">
+          <label>Lamp spacing <b id="lsVal">8</b></label>
+          <input type="number" id="lampSpacing" min="2" max="30" value="8">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button id="autoPillars">Pillars</button>
+        <button id="autoLamps">Lamps</button>
+        <button id="autoStairs">End stairs</button>
+      </div>
+      <button class="btn-block btn-ghost btn-danger" id="clearDecor" style="margin-top:8px;">Clear fittings</button>
+    </div>
+
+    <div class="module">
+      <h2>Style</h2>
+      <div class="toggle-row">
+        <span>Platform edge warning stripe</span>
+        <label class="switch"><input type="checkbox" id="edgeStripe" checked><span class="track"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span>Platform railing (track-facing edge)</span>
+        <label class="switch"><input type="checkbox" id="railing" checked><span class="track"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span>Back wall behind platforms</span>
+        <label class="switch"><input type="checkbox" id="backWall"><span class="track"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span>Roof / canopy</span>
+        <label class="switch"><input type="checkbox" id="roof"><span class="track"></span></label>
+      </div>
+    </div>
+
+    <div class="module">
+      <h2>Export</h2>
+      <button class="btn-block btn-primary" id="exportBtn">Export blueprint (.txt)</button>
+      <button class="btn-block btn-ghost" id="copyBtn" style="margin-top:8px;">Copy to clipboard</button>
+      <div class="export-panel" id="exportPanel">
+        <textarea id="exportText" readonly></textarea>
+        <div class="scrollbar-note">If the download didn't start, select all in the box above and copy manually.</div>
+      </div>
+    </div>
+
+    <div class="module" style="border-bottom:none;">
+      <h2>Schematic (.nbt)</h2>
+      <div class="hint" id="nbtSizeHint">Size: 32 × 5 × 22 blocks (X×Y×Z)</div>
+      <details style="margin-top:10px;">
+        <summary style="cursor:pointer; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em;">Block palette (advanced)</summary>
+        <div id="paletteFields" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;"></div>
+        <div class="toggle-row" style="margin-top:2px;">
+          <span>Fill clearance gaps at ground level</span>
+          <label class="switch"><input type="checkbox" id="fillClearance"><span class="track"></span></label>
+        </div>
+        <div class="field" style="margin-top:8px;">
+          <label>Data version <b id="dvVal">3465</b></label>
+          <input type="number" id="dataVersion" min="1000" max="9999" value="3465">
+        </div>
+        <div class="hint">Rail defaults to <code>create:track[shape=xo]</code> so it runs along the length (X) axis instead of Create's Z-axis default — swap the value below if your version uses a different shape name. Rail sits one block on top of the ballast, never replacing it. Railing is only placed on a platform edge once a track is actually confirmed across the gap, and always sits exactly one block above the (height-adjusted) platform surface.</div>
+      </details>
+      <button class="btn-block btn-primary" id="exportNbtBtn" style="margin-top:12px;">Export .nbt schematic</button>
+      <div class="hint" id="nbtStatus"></div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <div class="topbar">
+      <div class="title-block">
+        <div class="t1" id="titleSummary">2 TRACKS · 3 PLATFORMS</div>
+        <div class="t2 mono" id="titleFootprint">32 × 22 BLOCKS — LIVE PREVIEW</div>
+      </div>
+      <div class="topbar-controls">
+        <div class="zoom-wrap">
+          <span>ZOOM</span>
+          <input type="range" id="zoom" min="6" max="30" value="16">
+        </div>
+        <button id="fitBtn">Fit width</button>
+      </div>
+    </div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="canvas-frame">
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="item"><span class="sw" style="background:var(--platform)"></span>Platform</div>
+      <div class="item"><span class="sw" style="background:var(--track)"></span>Track</div>
+      <div class="item"><span class="sw" style="background:var(--gap)"></span>Clearance / ballast gap</div>
+      <div class="item"><span class="sw" style="background:linear-gradient(90deg,var(--warn-a),var(--warn-b))"></span>Edge warning stripe</div>
+      <div class="item"><span class="sw" style="background:var(--copper-bright)"></span>Fitting (pillar/lamp/bench/stairs)</div>
+    </div>
+
+    <div class="manifest">
+      <h2>Build Manifest</h2>
+      <div class="manifest-grid" id="manifestGrid"></div>
+      <div class="manifest-note">Estimates only — a planning guide, not an exact schematic. Track figures assume a standard 2-rail footprint per track; verify bogie/loading-gauge clearance for your rolling stock before building in Create: Steam 'n' Rails.</div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ================= STATE ================= */
+const state = {
+  length: 32,
+  platformWidth: 5,
+  platformHeight: 1,
+  gapPT: 2,
+  gapTT: 2,
+  trackWidth: 3,
+  numTracks: 2,
+  numPlatforms: 3,
+  sequence: [],
+  roof: false,
+  edgeStripe: true,
+  railing: true,
+  backWall: false,
+  zoom: 16,
+  brush: 'none',
+  decorations: new Map(),
+  nextId: 1,
+  lastRows: [],
+  lastGroups: [],
+  lastMetrics: null
+};
+
+/* ================= DOM refs ================= */
+const $ = id => document.getElementById(id);
+const canvas = $('canvas');
+const ctx = canvas.getContext('2d');
+
+/* ================= sequence generation ================= */
+function generateSequence(T, P){
+  T = Math.max(1, Math.floor(T));
+  const slots = T + 1;
+  P = Math.max(0, Math.min(Math.floor(P), slots));
+  const hasP = new Array(slots).fill(false);
+  let remaining = P;
+  if(remaining > 0){ hasP[0] = true; remaining--; }
+  if(remaining > 0 && slots > 1){ hasP[slots-1] = true; remaining--; }
+  const interior = [];
+  for(let i=1;i<=slots-2;i++) interior.push(i);
+  if(remaining > 0 && interior.length > 0){
+    const k = Math.min(remaining, interior.length);
+    for(let j=0;j<k;j++){
+      let idx = Math.round((j+1)*(interior.length+1)/(k+1)) - 1;
+      idx = Math.max(0, Math.min(interior.length-1, idx));
+      hasP[interior[idx]] = true;
+    }
+  }
+  const seq = [];
+  for(let i=0;i<T;i++){
+    if(hasP[i]) seq.push({type:'platform', id: state.nextId++});
+    seq.push({type:'track', id: state.nextId++});
+  }
+  if(hasP[slots-1]) seq.push({type:'platform', id: state.nextId++});
+  return seq;
+}
+
+/* ================= column / row model ================= */
+function labelSequence(seq){
+  let pc = 0, tc = 0;
+  return seq.map(seg=>{
+    if(seg.type === 'platform'){
+      pc++;
+      return Object.assign({}, seg, {label:'PLATFORM ' + String.fromCharCode(64+pc)});
+    } else {
+      tc++;
+      return Object.assign({}, seg, {label:'TRACK #' + tc});
+    }
+  });
+}
+
+function computeRows(){
+  const seq = labelSequence(state.sequence);
+  const rows = [];
+  for(let i=0;i<seq.length;i++){
+    const seg = seq[i];
+    const width = seg.type === 'platform' ? state.platformWidth : state.trackWidth;
+    for(let w=0; w<width; w++){
+      rows.push({type:seg.type, segId:seg.id, label:seg.label});
+    }
+    if(i < seq.length - 1){
+      const next = seq[i+1];
+      let gapW = 0;
+      if(seg.type !== next.type) gapW = state.gapPT;
+      else if(seg.type === 'track') gapW = state.gapTT;
+      for(let g=0; g<gapW; g++){
+        rows.push({type:'gap', segId:null, label:null});
+      }
+    }
+  }
+  if(rows.length === 0) rows.push({type:'gap', segId:null, label:null});
+  for(let r=0;r<rows.length;r++){
+    const row = rows[r];
+    if(row.type !== 'platform') continue;
+    row.edgeTop = rowHasTrackAcrossGap(rows, r, -1);
+    row.edgeBottom = rowHasTrackAcrossGap(rows, r, 1);
+  }
+  return rows;
+}
+
+// Scans past any gap rows in the given direction (-1 = toward index 0, +1 = toward the end)
+// and returns true only if an actual track row is found on the other side. This is the
+// explicit check used to decide where edge/safety railing belongs — a platform edge only
+// gets railing if there is really a track beyond the clearance gap, not merely "some gap".
+function rowHasTrackAcrossGap(rows, row, dir){
+  let i = row + dir;
+  while(i >= 0 && i < rows.length && rows[i].type === 'gap') i += dir;
+  if(i < 0 || i >= rows.length) return false;
+  return rows[i].type === 'track';
+}
+
+function groupRows(rows){
+  const groups = [];
+  let i = 0;
+  while(i < rows.length){
+    let j = i;
+    while(j < rows.length && rows[j].type === rows[i].type && rows[j].segId === rows[i].segId) j++;
+    groups.push({type: rows[i].type, label: rows[i].label, start:i, end:j-1, size:j-i});
+    i = j;
+  }
+  return groups;
+}
+
+/* ================= sidebar: sequence editor ================= */
+function renderSeqList(){
+  const ul = $('seqList');
+  ul.innerHTML = '';
+  const seq = labelSequence(state.sequence);
+  seq.forEach((seg, idx)=>{
+    const li = document.createElement('li');
+    li.className = 'seq-item ' + seg.type;
+    const width = seg.type === 'platform' ? state.platformWidth : state.trackWidth;
+    li.innerHTML =
+      '<span class="swatch"></span>' +
+      '<span class="lbl">' + seg.label + ' · ' + width + 'w</span>' +
+      '<button class="mini" data-act="left" title="Move left">&#9664;</button>' +
+      '<button class="mini" data-act="right" title="Move right">&#9654;</button>' +
+      '<button class="mini" data-act="del" title="Remove">&#10005;</button>';
+    li.querySelector('[data-act=left]').disabled = idx === 0;
+    li.querySelector('[data-act=right]').disabled = idx === seq.length-1;
+    li.querySelector('[data-act=left]').addEventListener('click', ()=> moveSeg(idx,-1));
+    li.querySelector('[data-act=right]').addEventListener('click', ()=> moveSeg(idx,1));
+    li.querySelector('[data-act=del]').addEventListener('click', ()=> delSeg(idx));
+    ul.appendChild(li);
+  });
+  syncCountInputs();
+}
+
+function moveSeg(idx, dir){
+  const j = idx + dir;
+  if(j < 0 || j >= state.sequence.length) return;
+  const arr = state.sequence;
+  [arr[idx], arr[j]] = [arr[j], arr[idx]];
+  refreshAll();
+}
+function delSeg(idx){
+  state.sequence.splice(idx,1);
+  if(state.sequence.length === 0){
+    state.sequence.push({type:'track', id: state.nextId++});
+  }
+  refreshAll();
+}
+function syncCountInputs(){
+  const t = state.sequence.filter(s=>s.type==='track').length;
+  const p = state.sequence.filter(s=>s.type==='platform').length;
+  $('numTracks').value = t;
+  $('numPlatforms').value = p;
+  $('ntVal').textContent = t;
+  $('npVal').textContent = p;
+}
+
+/* ================= manifest ================= */
+function computeManifest(rows, groups){
+  const length = state.length;
+  let platformFloor=0, trackBallast=0, railBlocks=0, edgeFence=0;
+  groups.forEach(g=>{
+    if(g.type==='platform') platformFloor += g.size*length;
+    if(g.type==='track'){ trackBallast += g.size*length; railBlocks += 2*length; }
+  });
+  rows.forEach(r=>{
+    if(!state.railing) return;
+    if(r.edgeTop) edgeFence += length;
+    if(r.edgeBottom) edgeFence += length;
+  });
+  let pillars=0, lamps=0, benches=0, stairs=0;
+  state.decorations.forEach(v=>{
+    if(v==='pillar') pillars++;
+    else if(v==='lamp') lamps++;
+    else if(v==='bench') benches++;
+    else if(v==='stairs') stairs++;
+  });
+  const crossWidth = rows.length;
+  const footprint = length * crossWidth;
+  const roofPanels = state.roof ? footprint : 0;
+  const backWallBlocks = state.backWall ? length * state.platformHeight * groups.filter(g=>g.type==='platform').length : 0;
+  const supportBlocks = pillars * (state.platformHeight + 1);
+  return {platformFloor, trackBallast, railBlocks, edgeFence, pillars, lamps, benches, stairs,
+    footprint, roofPanels, backWallBlocks, supportBlocks, crossWidth};
+}
+
+function updateManifestUI(m){
+  const grid = $('manifestGrid');
+  const cells = [
+    ['Footprint', m.footprint + ' blk²'],
+    ['Platform flooring', m.platformFloor + ' blk'],
+    ['Track ballast', m.trackBallast + ' blk'],
+    ['Rail blocks', m.railBlocks + ' blk'],
+    ['Edge fencing', m.edgeFence + ' blk'],
+    ['Support pillars', m.pillars + (m.pillars ? ' (' + m.supportBlocks + ' blk)' : '')],
+    ['Lamps', m.lamps],
+    ['Benches', m.benches],
+    ['Access stairs', m.stairs],
+    ['Roof panels', m.roofPanels ? m.roofPanels + ' blk' : '—'],
+    ['Back wall', m.backWallBlocks ? m.backWallBlocks + ' blk' : '—'],
+  ];
+  grid.innerHTML = cells.map(c=>
+    '<div class="manifest-cell"><div class="k">'+c[0]+'</div><div class="v">'+c[1]+'</div></div>'
+  ).join('');
+}
+
+/* ================= drawing ================= */
+const COLORS = {
+  platform: '#cdbfa1', platformDk:'#b6a582',
+  track:'#454c55', trackDk:'#363c44', rail:'#e4ddc9',
+  gap:'#1c232c', gapDot:'#333e4c',
+  warnA:'#e8c14a', warnB:'#1b1f24',
+  copperBright:'#e8a25c', copper:'#c17a3d',
+  muted:'#8592a3', muted2:'#5d6879', parchment:'#ece5d3',
+  gridLine:'#1c5680', gridLineBold:'#2c729e', blueprint:'#0d3350'
+};
+
+function drawAll(){
+  const rows = computeRows();
+  const groups = groupRows(rows);
+  state.lastRows = rows;
+  state.lastGroups = groups;
+
+  const cell = state.zoom;
+  const marginLeft = 108, marginTop = 50, pad = 22;
+  const length = state.length;
+  const cssW = marginLeft + length*cell + pad;
+  const cssH = marginTop + rows.length*cell + pad;
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  canvas.width = Math.round(cssW*dpr);
+  canvas.height = Math.round(cssH*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  state.lastMetrics = {marginLeft, marginTop, cell, length, rowsLen: rows.length};
+
+  ctx.clearRect(0,0,cssW,cssH);
+  ctx.fillStyle = COLORS.blueprint;
+  ctx.fillRect(0,0,cssW,cssH);
+
+  // blueprint grid paper (subtle, whole canvas)
+  ctx.strokeStyle = 'rgba(255,255,255,.035)';
+  ctx.lineWidth = 1;
+  for(let x=0;x<cssW;x+=cell){ ctx.beginPath(); ctx.moveTo(x+.5,0); ctx.lineTo(x+.5,cssH); ctx.stroke(); }
+  for(let y=0;y<cssH;y+=cell){ ctx.beginPath(); ctx.moveTo(0,y+.5); ctx.lineTo(cssW,y+.5); ctx.stroke(); }
+
+  // row bands
+  rows.forEach((row,r)=>{
+    const y = marginTop + r*cell;
+    let fill = COLORS.gap;
+    if(row.type==='platform') fill = COLORS.platform;
+    if(row.type==='track') fill = COLORS.track;
+    ctx.fillStyle = fill;
+    ctx.fillRect(marginLeft, y, length*cell, cell);
+  });
+
+  // grid lines over bands (block grid)
+  ctx.strokeStyle = 'rgba(0,0,0,.18)';
+  ctx.lineWidth = 1;
+  for(let c=0;c<=length;c++){
+    const x = marginLeft + c*cell;
+    ctx.beginPath(); ctx.moveTo(x+.5, marginTop); ctx.lineTo(x+.5, marginTop+rows.length*cell); ctx.stroke();
+  }
+  for(let r=0;r<=rows.length;r++){
+    const y = marginTop + r*cell;
+    ctx.beginPath(); ctx.moveTo(marginLeft, y+.5); ctx.lineTo(marginLeft+length*cell, y+.5); ctx.stroke();
+  }
+
+  // texture per group
+  groups.forEach(g=>{
+    const gy = marginTop + g.start*cell;
+    const gh = g.size*cell;
+    if(g.type==='platform'){
+      ctx.strokeStyle = 'rgba(90,70,40,.18)';
+      ctx.lineWidth = 1;
+      for(let c=0;c<=length;c+=4){
+        const x = marginLeft + c*cell;
+        ctx.beginPath(); ctx.moveTo(x+.5, gy); ctx.lineTo(x+.5, gy+gh); ctx.stroke();
+      }
+    } else if(g.type==='track'){
+      ctx.strokeStyle = COLORS.rail;
+      ctx.lineWidth = Math.max(1.5, cell*0.12);
+      const railInset = Math.min(cell*0.28, 6);
+      ctx.beginPath(); ctx.moveTo(marginLeft, gy+railInset); ctx.lineTo(marginLeft+length*cell, gy+railInset); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(marginLeft, gy+gh-railInset); ctx.lineTo(marginLeft+length*cell, gy+gh-railInset); ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,0,0,.35)';
+      ctx.lineWidth = 1;
+      for(let c=0;c<length;c+=2){
+        const x = marginLeft + c*cell + cell/2;
+        ctx.beginPath(); ctx.moveTo(x, gy+2); ctx.lineTo(x, gy+gh-2); ctx.stroke();
+      }
+    } else if(g.type==='gap' && cell >= 7){
+      ctx.fillStyle = COLORS.gapDot;
+      for(let c=1;c<length;c+=3){
+        for(let rr=0;rr<g.size;rr++){
+          const x = marginLeft + c*cell + cell/2;
+          const y = gy + rr*cell + cell/2;
+          ctx.beginPath(); ctx.arc(x,y,Math.max(1,cell*0.06),0,Math.PI*2); ctx.fill();
+        }
+      }
+    }
+  });
+
+  // edge warning stripes
+  if(state.edgeStripe){
+    const stripeH = Math.max(3, Math.min(5, cell*0.3));
+    rows.forEach((row,r)=>{
+      if(row.type!=='platform') return;
+      const y = marginTop + r*cell;
+      if(row.edgeTop) drawStripe(marginLeft, y, length, cell, stripeH, 'top');
+      if(row.edgeBottom) drawStripe(marginLeft, y, length, cell, stripeH, 'bottom');
+    });
+  }
+
+  // back wall indicator (thin brass line behind outermost platform edges)
+  if(state.backWall){
+    ctx.strokeStyle = COLORS.copperBright;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6,4]);
+    if(rows[0] && rows[0].type==='platform'){
+      ctx.beginPath(); ctx.moveTo(marginLeft, marginTop+1.5); ctx.lineTo(marginLeft+length*cell, marginTop+1.5); ctx.stroke();
+    }
+    const lastY = marginTop + rows.length*cell - 1.5;
+    if(rows[rows.length-1] && rows[rows.length-1].type==='platform'){
+      ctx.beginPath(); ctx.moveTo(marginLeft, lastY); ctx.lineTo(marginLeft+length*cell, lastY); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  // roof overlay
+  if(state.roof){
+    ctx.fillStyle = 'rgba(232,162,92,.08)';
+    ctx.fillRect(marginLeft, marginTop, length*cell, rows.length*cell);
+    ctx.strokeStyle = 'rgba(232,162,92,.35)';
+    ctx.lineWidth = 1;
+    for(let c=0;c<=length;c+=4){
+      const x = marginLeft + c*cell;
+      ctx.beginPath(); ctx.moveTo(x,marginTop); ctx.lineTo(x-8,marginTop-8); ctx.stroke();
+    }
+  }
+
+  // decorations
+  state.decorations.forEach((v,key)=>{
+    const [c,r] = key.split(',').map(Number);
+    if(c<0 || c>=length || r<0 || r>=rows.length) return;
+    const x = marginLeft + c*cell + cell/2;
+    const y = marginTop + r*cell + cell/2;
+    drawDecoration(v, x, y, cell);
+  });
+
+  // dimension: top (length)
+  drawTopDimension(marginLeft, marginTop, length, cell);
+  // dimension: left (cross-section groups)
+  drawLeftDimension(marginLeft, marginTop, groups, cell);
+
+  updateManifestUI(computeManifest(rows, groups));
+  updateTitleBar(rows.length);
+}
+
+function drawStripe(marginLeft, rowY, length, cell, stripeH, edge){
+  const y = edge==='top' ? rowY : rowY + cell - stripeH;
+  for(let c=0;c<length;c++){
+    ctx.fillStyle = (c % 2 === 0) ? COLORS.warnA : COLORS.warnB;
+    ctx.fillRect(marginLeft + c*cell, y, cell, stripeH);
+  }
+}
+
+function drawDecoration(type, x, y, cell){
+  const s = Math.max(6, cell*0.42);
+  ctx.save();
+  if(type==='pillar'){
+    ctx.fillStyle = '#2a2016';
+    ctx.strokeStyle = COLORS.copperBright;
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(x-s/2, y-s/2, s, s);
+    ctx.strokeRect(x-s/2, y-s/2, s, s);
+  } else if(type==='lamp'){
+    const grad = ctx.createRadialGradient(x,y,0,x,y,s*1.4);
+    grad.addColorStop(0,'rgba(232,193,74,.85)');
+    grad.addColorStop(1,'rgba(232,193,74,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(x,y,s*1.4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = COLORS.warnA;
+    ctx.beginPath(); ctx.arc(x,y,s*0.32,0,Math.PI*2); ctx.fill();
+  } else if(type==='bench'){
+    ctx.fillStyle = '#8a5a35';
+    ctx.strokeStyle = '#3a2413';
+    ctx.lineWidth = 1;
+    ctx.fillRect(x-s*0.6, y-s*0.22, s*1.2, s*0.44);
+    ctx.strokeRect(x-s*0.6, y-s*0.22, s*1.2, s*0.44);
+  } else if(type==='stairs'){
+    ctx.fillStyle = COLORS.copperBright;
+    ctx.beginPath();
+    ctx.moveTo(x-s*0.55, y+s*0.5);
+    ctx.lineTo(x+s*0.55, y+s*0.5);
+    ctx.lineTo(x, y-s*0.55);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawTopDimension(marginLeft, marginTop, length, cell){
+  const y = marginTop - 18;
+  ctx.strokeStyle = COLORS.copperBright;
+  ctx.fillStyle = COLORS.copperBright;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(marginLeft, y); ctx.lineTo(marginLeft+length*cell, y); ctx.stroke();
+  arrowHead(marginLeft, y, 'left');
+  arrowHead(marginLeft+length*cell, y, 'right');
+  const tickEvery = cell >= 14 ? 5 : (cell >= 8 ? 10 : 20);
+  for(let c=0;c<=length;c+=tickEvery){
+    const x = marginLeft + c*cell;
+    ctx.beginPath(); ctx.moveTo(x, y-4); ctx.lineTo(x, y+4); ctx.stroke();
+  }
+  ctx.font = "600 11px 'JetBrains Mono', monospace";
+  ctx.textAlign = 'center';
+  ctx.fillText('LENGTH · ' + length + ' BLOCKS', marginLeft + length*cell/2, y-8);
+}
+
+function drawLeftDimension(marginLeft, marginTop, groups, cell){
+  const x = marginLeft - 12;
+  ctx.strokeStyle = COLORS.muted;
+  ctx.lineWidth = 1;
+  groups.forEach(g=>{
+    const y0 = marginTop + g.start*cell;
+    const y1 = marginTop + (g.end+1)*cell;
+    ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x-4,y0); ctx.lineTo(x+4,y0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x-4,y1); ctx.lineTo(x+4,y1); ctx.stroke();
+
+    const label = (g.label || 'GAP') + ' · ' + g.size;
+    const midY = (y0+y1)/2;
+    ctx.save();
+    ctx.translate(x-14, midY);
+    ctx.rotate(-Math.PI/2);
+    ctx.font = "600 10px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillStyle = g.type==='gap' ? COLORS.muted : COLORS.parchment;
+    ctx.fillText(label, 0, 0);
+    ctx.restore();
+  });
+}
+
+function arrowHead(x,y,dir){
+  ctx.save();
+  ctx.fillStyle = COLORS.copperBright;
+  ctx.beginPath();
+  if(dir==='left'){
+    ctx.moveTo(x,y); ctx.lineTo(x+7,y-3.5); ctx.lineTo(x+7,y+3.5);
+  } else {
+    ctx.moveTo(x,y); ctx.lineTo(x-7,y-3.5); ctx.lineTo(x-7,y+3.5);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function updateTitleBar(crossWidth){
+  const t = state.sequence.filter(s=>s.type==='track').length;
+  const p = state.sequence.filter(s=>s.type==='platform').length;
+  $('titleSummary').textContent = t + ' TRACK' + (t!==1?'S':'') + ' · ' + p + ' PLATFORM' + (p!==1?'S':'');
+  $('titleFootprint').textContent = state.length + ' × ' + crossWidth + ' BLOCKS — LIVE PREVIEW';
+}
+
+/* ================= canvas interaction ================= */
+canvas.addEventListener('click', (e)=>{
+  if(state.brush === 'none') return;
+  const m = state.lastMetrics;
+  if(!m) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const col = Math.floor((mx - m.marginLeft) / m.cell);
+  const row = Math.floor((my - m.marginTop) / m.cell);
+  if(col<0 || col>=m.length || row<0 || row>=m.rowsLen) return;
+  const cellRow = state.lastRows[row];
+  if(!cellRow || cellRow.type !== 'platform') return;
+  const key = col + ',' + row;
+  if(state.brush === 'eraser'){
+    state.decorations.delete(key);
+  } else {
+    state.decorations.set(key, state.brush);
+  }
+  drawAll();
+});
+
+/* ================= sidebar wiring ================= */
+function bindNumber(id, prop, labelId, onchange){
+  const el = $(id);
+  el.addEventListener('input', ()=>{
+    let v = parseFloat(el.value);
+    if(isNaN(v)) return;
+    state[prop] = v;
+    if(labelId) $(labelId).textContent = v;
+    (onchange || refreshAll)();
+  });
+}
+
+bindNumber('length','length','lenVal');
+bindNumber('platformWidth','platformWidth','pwVal');
+bindNumber('platformHeight','platformHeight','phVal');
+bindNumber('gapPT','gapPT','gpVal');
+bindNumber('trackWidth','trackWidth','twVal');
+bindNumber('gapTT','gapTT','ttVal');
+
+$('numTracks').addEventListener('change', ()=>{
+  state.numTracks = Math.max(1, Math.round(parseFloat($('numTracks').value)||1));
+  state.numPlatforms = Math.max(0, Math.round(parseFloat($('numPlatforms').value)||0));
+  state.sequence = generateSequence(state.numTracks, state.numPlatforms);
+  refreshAll();
+});
+$('numPlatforms').addEventListener('change', ()=>{
+  state.numTracks = Math.max(1, Math.round(parseFloat($('numTracks').value)||1));
+  state.numPlatforms = Math.max(0, Math.round(parseFloat($('numPlatforms').value)||0));
+  state.sequence = generateSequence(state.numTracks, state.numPlatforms);
+  refreshAll();
+});
+
+$('addPlatform').addEventListener('click', ()=>{
+  state.sequence.push({type:'platform', id: state.nextId++});
+  refreshAll();
+});
+$('addTrack').addEventListener('click', ()=>{
+  state.sequence.push({type:'track', id: state.nextId++});
+  refreshAll();
+});
+
+document.querySelectorAll('.brush').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.brush').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    state.brush = b.dataset.brush;
+  });
+});
+
+bindNumber('pillarSpacing','pillarSpacingVal','psVal', ()=>{});
+$('pillarSpacing').addEventListener('input', ()=>{ $('psVal').textContent = $('pillarSpacing').value; });
+$('lampSpacing').addEventListener('input', ()=>{ $('lsVal').textContent = $('lampSpacing').value; });
+
+function centerRowsOfPlatforms(){
+  const rows = computeRows();
+  const groups = groupRows(rows).filter(g=>g.type==='platform');
+  return groups.map(g=> g.start + Math.floor(g.size/2));
+}
+
+$('autoPillars').addEventListener('click', ()=>{
+  const spacing = Math.max(2, parseInt($('pillarSpacing').value)||6);
+  centerRowsOfPlatforms().forEach(row=>{
+    for(let c=Math.floor(spacing/2); c<state.length; c+=spacing){
+      state.decorations.set(c+','+row, 'pillar');
+    }
+  });
+  drawAll();
+});
+$('autoLamps').addEventListener('click', ()=>{
+  const spacing = Math.max(2, parseInt($('lampSpacing').value)||8);
+  centerRowsOfPlatforms().forEach(row=>{
+    for(let c=1; c<state.length; c+=spacing){
+      state.decorations.set(c+','+row, 'lamp');
+    }
+  });
+  drawAll();
+});
+$('autoStairs').addEventListener('click', ()=>{
+  centerRowsOfPlatforms().forEach(row=>{
+    state.decorations.set('0,'+row, 'stairs');
+    state.decorations.set((state.length-1)+','+row, 'stairs');
+  });
+  drawAll();
+});
+$('clearDecor').addEventListener('click', ()=>{
+  state.decorations.clear();
+  drawAll();
+});
+
+$('edgeStripe').addEventListener('change', e=>{ state.edgeStripe = e.target.checked; drawAll(); });
+$('railing').addEventListener('change', e=>{ state.railing = e.target.checked; drawAll(); });
+$('backWall').addEventListener('change', e=>{ state.backWall = e.target.checked; drawAll(); });
+$('roof').addEventListener('change', e=>{ state.roof = e.target.checked; drawAll(); });
+
+$('zoom').addEventListener('input', e=>{ state.zoom = parseInt(e.target.value); drawAll(); });
+$('fitBtn').addEventListener('click', ()=>{
+  const wrap = $('canvasWrap');
+  const avail = wrap.clientWidth - 108 - 60;
+  const z = Math.max(6, Math.min(30, Math.floor(avail / state.length)));
+  state.zoom = z;
+  $('zoom').value = z;
+  drawAll();
+});
+
+/* ================= export ================= */
+function buildExportText(){
+  const rows = state.lastRows.length ? state.lastRows : computeRows();
+  const groups = state.lastGroups.length ? state.lastGroups : groupRows(rows);
+  const m = computeManifest(rows, groups);
+  const now = new Date().toISOString().slice(0,10);
+
+  const chars = { platform:'P', track:'T', gap:'.' };
+  const decoChar = { pillar:'o', lamp:'*', bench:'b', stairs:'^' };
+  let map = '';
+  for(let r=0;r<rows.length;r++){
+    let line = '';
+    for(let c=0;c<state.length;c++){
+      const d = state.decorations.get(c+','+r);
+      if(d && decoChar[d]) line += decoChar[d];
+      else line += chars[rows[r].type] || '.';
+    }
+    map += line + '\n';
+  }
+
+  const crossLines = groups.map((g,i)=> ' ' + (i+1) + '. ' + (g.label || 'Gap') + ' — ' + g.size + ' blocks').join('\n');
+
+  return [
+'TRACKWORKS — CREATE MOD TRAIN STATION BLUEPRINT',
+'Generated ' + now,
+'',
+'SETTINGS',
+' Length: ' + state.length + ' blocks',
+' Platform width: ' + state.platformWidth + ' blocks',
+' Platform height: ' + state.platformHeight + ' blocks',
+' Platform <-> track gap: ' + state.gapPT + ' blocks',
+' Track <-> track gap: ' + state.gapTT + ' blocks',
+' Track width: ' + state.trackWidth + ' blocks',
+' Tracks: ' + state.sequence.filter(s=>s.type==='track').length,
+' Platforms: ' + state.sequence.filter(s=>s.type==='platform').length,
+' Edge warning stripe: ' + (state.edgeStripe ? 'yes' : 'no'),
+' Platform railing: ' + (state.railing ? 'yes' : 'no'),
+' Roof/canopy: ' + (state.roof ? 'yes' : 'no'),
+' Back wall: ' + (state.backWall ? 'yes' : 'no'),
+'',
+'CROSS-SECTION (edge to edge)',
+crossLines,
+' Total cross-section width: ' + rows.length + ' blocks',
+' Total footprint: ' + state.length + ' x ' + rows.length + ' = ' + m.footprint + ' blocks^2',
+'',
+'TOP-DOWN MAP  (P=platform  T=track  .=clearance/ballast  o=pillar  *=lamp  b=bench  ^=stairs)',
+map.trimEnd(),
+'',
+'MATERIALS ESTIMATE (approximate — adjust to your build)',
+' Platform flooring: ' + m.platformFloor + ' blocks',
+' Track ballast: ' + m.trackBallast + ' blocks',
+' Rail blocks (2 per track length): ' + m.railBlocks + ' blocks',
+' Platform edge fencing: ' + m.edgeFence + ' blocks',
+' Support pillars: ' + m.pillars + ' (~' + m.supportBlocks + ' blocks tall)',
+' Lamps: ' + m.lamps,
+' Benches: ' + m.benches,
+' Access stairs: ' + m.stairs,
+' Roof panels: ' + (m.roofPanels || 0) + ' blocks',
+' Back wall: ' + (m.backWallBlocks || 0) + ' blocks',
+'',
+'NOTES',
+' - Distances are in blocks (1 block = 1 in-game block).',
+" - Track figures assume Create: Steam 'n' Rails standard-gauge track;",
+'   adjust for custom bogies/loading gauge.',
+' - This is a planning guide, not an exact schematic — verify clearances',
+'   for your rolling stock before building.'
+].join('\n');
+}
+
+$('exportBtn').addEventListener('click', ()=>{
+  drawAll();
+  const text = buildExportText();
+  $('exportText').value = text;
+  $('exportPanel').classList.add('open');
+  try{
+    const blob = new Blob([text], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'station-blueprint.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  }catch(err){
+    /* fallback: textarea already shown */
+  }
+});
+
+$('copyBtn').addEventListener('click', ()=>{
+  drawAll();
+  const text = buildExportText();
+  $('exportText').value = text;
+  $('exportPanel').classList.add('open');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).catch(()=>{
+      $('exportText').select();
+    });
+  } else {
+    $('exportText').select();
+    try{ document.execCommand('copy'); }catch(e){}
+  }
+});
+
+/* ================= NBT schematic export ================= */
+const PALETTE_ROLES = [
+  {key:'platformFloor',      label:'Platform surface (top)', def:'minecraft:smooth_stone'},
+  {key:'platformEdge',       label:'Platform surface, edge (warning strip)', def:'minecraft:polished_andesite'},
+  {key:'platformFoundation', label:'Platform foundation (below surface)', def:'minecraft:stone_bricks'},
+  {key:'trackRail',          label:'Track rail (Create mod, sits on ballast)', def:'create:track[shape=xo]'},
+  {key:'trackBed',           label:'Track ballast (under rail + either side)', def:'minecraft:gravel'},
+  {key:'clearance',          label:'Clearance gap fill', def:'minecraft:air'},
+  {key:'edgeFence',          label:'Edge fence / railing', def:'minecraft:iron_bars'},
+  {key:'wall',               label:'Back wall', def:'minecraft:cobblestone'},
+  {key:'roof',               label:'Roof panel', def:'minecraft:glass'},
+  {key:'pillar',             label:'Support pillar', def:'minecraft:stone_bricks'},
+  {key:'lampPost',           label:'Lamp post', def:'minecraft:oak_fence'},
+  {key:'lamp',               label:'Lamp light', def:'minecraft:lantern'},
+  {key:'bench',              label:'Bench', def:'minecraft:oak_slab'},
+  {key:'stairsBlock',        label:'Access stairs', def:'minecraft:oak_stairs'}
+];
+state.palette = {};
+PALETTE_ROLES.forEach(r=>{ state.palette[r.key] = r.def; });
+state.fillClearance = false;
+state.dataVersion = 3465;
+
+function renderPaletteFields(){
+  const wrap = $('paletteFields');
+  wrap.innerHTML = PALETTE_ROLES.map(r=>
+    '<div class="field" style="margin-bottom:0;">' +
+      '<label>' + r.label + '</label>' +
+      '<input type="text" data-role="' + r.key + '" value="' + r.def + '" ' +
+      'style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--parchment);' +
+      'padding:6px 8px;border-radius:3px;font-size:11px;font-family:\'JetBrains Mono\',monospace;">' +
+    '</div>'
+  ).join('');
+  wrap.querySelectorAll('input[data-role]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      state.palette[inp.dataset.role] = inp.value.trim() || 'minecraft:air';
+    });
+  });
+}
+
+$('fillClearance').addEventListener('change', e=>{ state.fillClearance = e.target.checked; updateNbtSizeHint(); });
+$('dataVersion').addEventListener('input', e=>{
+  state.dataVersion = parseInt(e.target.value,10) || 3465;
+  $('dvVal').textContent = state.dataVersion;
+});
+
+// Single source of truth for the vertical layout, shared by the size hint and the builder.
+// Ground/ballast/rail always sit at y=0 / y=1 regardless of platform height.
+// Platform foundation always starts at y=0 (ground) and its top — the walkable surface —
+// rises to y=surfaceY as platformHeight increases. Railing always sits exactly one block
+// above that surface, never scaling with platformHeight itself.
+function computeHeights(platformHeight, roofOn){
+  const surfaceY = platformHeight;      // top of foundation = walkable platform surface
+  const fenceY = surfaceY + 1;          // railing sits directly on top of the surface
+  const wallTop = fenceY + platformHeight - 1; // back wall rises platformHeight blocks above the surface
+  const roofY = surfaceY + 4;           // fixed headroom above the surface for the canopy
+  const sizeY = roofOn ? roofY + 1 : Math.max(fenceY, wallTop) + 2;
+  return {surfaceY, fenceY, wallTop, roofY, sizeY};
+}
+
+function updateNbtSizeHint(){
+  const rows = state.lastRows.length ? state.lastRows : computeRows();
+  const platformHeight = Math.max(1, Math.round(state.platformHeight));
+  const H = computeHeights(platformHeight, state.roof);
+  $('nbtSizeHint').textContent = 'Size: ' + state.length + ' \u00d7 ' + H.sizeY + ' \u00d7 ' + rows.length + ' blocks (X\u00d7Y\u00d7Z)';
+}
+
+function parseBlockId(str){
+  const s = (str || '').trim();
+  const m = s.match(/^([a-z0-9_.\-]+:[a-z0-9_./\-]+)(?:\[(.*)\])?$/i);
+  if(!m) return {name: s || 'minecraft:air', props:{}};
+  const props = {};
+  if(m[2]){
+    m[2].split(',').forEach(pair=>{
+      const eq = pair.indexOf('=');
+      if(eq > 0){ props[pair.slice(0,eq).trim()] = pair.slice(eq+1).trim(); }
+    });
+  }
+  return {name: m[1], props: props};
+}
+
+function buildBlockModel(){
+  const rows = state.lastRows.length ? state.lastRows : computeRows();
+  const crossWidth = rows.length;
+  const length = state.length;
+  const platformHeight = Math.max(1, Math.round(state.platformHeight));
+  const roofOn = state.roof;
+  const H = computeHeights(platformHeight, roofOn);
+  const surfaceY = H.surfaceY, fenceY = H.fenceY, wallTop = H.wallTop, roofY = H.roofY;
+
+  const blockMap = new Map();
+  const put = (x,y,z,role) => { blockMap.set(x+','+y+','+z, role); };
+  const groups = groupRows(rows);
+
+  // Platform: solid foundation from ground (y=0) up through y=surfaceY-1, walkable
+  // surface block at y=surfaceY. Raising platformHeight extends the foundation downward
+  // to the ground and pushes the surface upward — the foundation's base never moves.
+  for(let row=0; row<crossWidth; row++){
+    const r = rows[row];
+    if(r.type !== 'platform') continue;
+    const isEdge = (r.edgeTop || r.edgeBottom) && state.edgeStripe;
+    const surfaceRole = isEdge ? 'platformEdge' : 'platformFloor';
+    for(let col=0; col<length; col++){
+      for(let y=0; y<surfaceY; y++) put(col, y, row, 'platformFoundation');
+      put(col, surfaceY, row, surfaceRole);
+    }
+  }
+
+  // Track: ballast at ground level (y=0) under the full width of every track group.
+  for(let row=0; row<crossWidth; row++){
+    if(rows[row].type !== 'track') continue;
+    for(let col=0; col<length; col++) put(col, 0, row, 'trackBed');
+  }
+  // Rail sits ON TOP of the ballast (y=1), one line down the centre of each track group —
+  // it does not replace the ballast beneath it.
+  groups.filter(g=>g.type==='track').forEach(g=>{
+    const centerRow = g.start + Math.floor(g.size/2);
+    for(let col=0; col<length; col++) put(col, 1, centerRow, 'trackRail');
+  });
+
+  if(state.fillClearance){
+    rows.forEach((r,row)=>{
+      if(r.type !== 'gap') return;
+      for(let col=0; col<length; col++) put(col,0,row,'clearance');
+    });
+  }
+
+  // Edge fence: on top of the raised surface, and only where rowHasTrackAcrossGap()
+  // has actually confirmed a track lies beyond the clearance gap on that side.
+  // Independent of the warning-stripe surface material above — controlled by its own toggle.
+  if(state.railing){
+    rows.forEach((r,row)=>{
+      if(r.type !== 'platform') return;
+      if(r.edgeTop || r.edgeBottom){
+        for(let col=0; col<length; col++) put(col, fenceY, row, 'edgeFence');
+      }
+    });
+  }
+
+  // Back wall: rises from the surface at the outermost (non-track-facing) platform edge.
+  if(state.backWall){
+    if(rows[0] && rows[0].type==='platform'){
+      for(let col=0; col<length; col++) for(let y=fenceY; y<=wallTop; y++) put(col,y,0,'wall');
+    }
+    if(rows[crossWidth-1] && rows[crossWidth-1].type==='platform'){
+      for(let col=0; col<length; col++) for(let y=fenceY; y<=wallTop; y++) put(col,y,crossWidth-1,'wall');
+    }
+  }
+
+  if(roofOn){
+    for(let row=0; row<crossWidth; row++) for(let col=0; col<length; col++) put(col, roofY, row, 'roof');
+  }
+
+  state.decorations.forEach((type,key)=>{
+    const parts = key.split(',');
+    const col = parseInt(parts[0],10), row = parseInt(parts[1],10);
+    if(col<0 || col>=length || row<0 || row>=crossWidth) return;
+    if(!rows[row] || rows[row].type !== 'platform') return; // fittings only ever belong on platform tiles
+    if(type==='pillar'){
+      const top = roofOn ? roofY-1 : surfaceY;
+      for(let y=0;y<=top;y++) put(col,y,row,'pillar');
+    } else if(type==='lamp'){
+      put(col, surfaceY+1, row, 'lampPost');
+      put(col, surfaceY+2, row, 'lamp');
+    } else if(type==='bench'){
+      put(col, surfaceY+1, row, 'bench');
+    } else if(type==='stairs'){
+      put(col, surfaceY, row, 'stairsBlock');
+    }
+  });
+
+  const paletteIndex = new Map();
+  const palette = [];
+  const blocks = [];
+  blockMap.forEach((role,key)=>{
+    const raw = state.palette[role] || 'minecraft:air';
+    const parsed = parseBlockId(raw);
+    if(parsed.name === 'minecraft:air') return;
+    const sig = parsed.name + JSON.stringify(parsed.props);
+    let idx = paletteIndex.get(sig);
+    if(idx === undefined){
+      idx = palette.length;
+      palette.push(parsed);
+      paletteIndex.set(sig, idx);
+    }
+    const coords = key.split(',').map(Number);
+    blocks.push({pos: coords, stateIdx: idx});
+  });
+
+  if(palette.length === 0) palette.push({name:'minecraft:air', props:{}});
+
+  return {size:[length, H.sizeY, crossWidth], blocks, palette};
+}
+
+/* ---- NBT binary writer ---- */
+const NBT_TAG = {End:0, Byte:1, Short:2, Int:3, Long:4, Float:5, Double:6, ByteArray:7, String:8, List:9, Compound:10, IntArray:11, LongArray:12};
+
+function NBTWriter(){ this.parts = []; this.len = 0; }
+NBTWriter.prototype._push = function(u8){ this.parts.push(u8); this.len += u8.length; };
+NBTWriter.prototype.u8 = function(v){ this._push(Uint8Array.of(v & 0xff)); };
+NBTWriter.prototype.i32 = function(v){ const b = new Uint8Array(4); new DataView(b.buffer).setInt32(0, v, false); this._push(b); };
+NBTWriter.prototype.utf8 = function(str){
+  const bytes = new TextEncoder().encode(String(str));
+  const lenB = new Uint8Array(2);
+  new DataView(lenB.buffer).setUint16(0, bytes.length, false);
+  this._push(lenB);
+  this._push(bytes);
+};
+NBTWriter.prototype.toBytes = function(){
+  const out = new Uint8Array(this.len);
+  let off = 0;
+  this.parts.forEach(p=>{ out.set(p, off); off += p.length; });
+  return out;
+};
+
+function nbtHeader(w, type, name){ w.u8(type); w.utf8(name); }
+
+function writePaletteEntry(w, entry){
+  nbtHeader(w, NBT_TAG.String, 'Name');
+  w.utf8(entry.name);
+  const keys = Object.keys(entry.props);
+  if(keys.length){
+    nbtHeader(w, NBT_TAG.Compound, 'Properties');
+    keys.forEach(k=>{
+      nbtHeader(w, NBT_TAG.String, k);
+      w.utf8(String(entry.props[k]));
+    });
+    w.u8(NBT_TAG.End);
+  }
+  w.u8(NBT_TAG.End);
+}
+
+function writeBlockEntry(w, block){
+  nbtHeader(w, NBT_TAG.List, 'pos');
+  w.u8(NBT_TAG.Int); w.i32(3);
+  w.i32(block.pos[0]); w.i32(block.pos[1]); w.i32(block.pos[2]);
+  nbtHeader(w, NBT_TAG.Int, 'state');
+  w.i32(block.stateIdx);
+  w.u8(NBT_TAG.End);
+}
+
+function buildStructureNBT(size, blocks, palette, dataVersion){
+  const w = new NBTWriter();
+  nbtHeader(w, NBT_TAG.Compound, '');
+
+  nbtHeader(w, NBT_TAG.Int, 'DataVersion');
+  w.i32(dataVersion|0);
+
+  nbtHeader(w, NBT_TAG.List, 'size');
+  w.u8(NBT_TAG.Int); w.i32(3);
+  w.i32(size[0]); w.i32(size[1]); w.i32(size[2]);
+
+  nbtHeader(w, NBT_TAG.List, 'entities');
+  w.u8(NBT_TAG.Compound); w.i32(0);
+
+  nbtHeader(w, NBT_TAG.List, 'blocks');
+  w.u8(NBT_TAG.Compound); w.i32(blocks.length);
+  blocks.forEach(b=> writeBlockEntry(w,b));
+
+  nbtHeader(w, NBT_TAG.List, 'palette');
+  w.u8(NBT_TAG.Compound); w.i32(palette.length);
+  palette.forEach(p=> writePaletteEntry(w,p));
+
+  w.u8(NBT_TAG.End);
+  return w.toBytes();
+}
+
+async function gzipBytes(bytes){
+  if(typeof CompressionStream === 'undefined'){
+    throw new Error('no-compression-stream');
+  }
+  const cs = new CompressionStream('gzip');
+  const writer = cs.writable.getWriter();
+  writer.write(bytes);
+  writer.close();
+  const buf = await new Response(cs.readable).arrayBuffer();
+  return new Uint8Array(buf);
+}
+
+$('exportNbtBtn').addEventListener('click', async ()=>{
+  const statusEl = $('nbtStatus');
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Building schematic\u2026';
+  try{
+    drawAll();
+    const model = buildBlockModel();
+    const nbtBytes = buildStructureNBT(model.size, model.blocks, model.palette, state.dataVersion);
+    const gz = await gzipBytes(nbtBytes);
+    const blob = new Blob([gz], {type:'application/octet-stream'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'station.nbt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    statusEl.style.color = 'var(--good)';
+    statusEl.textContent = 'Exported station.nbt \u2014 ' + model.blocks.length + ' blocks, ' + model.size.join('\u00d7') + '. Load it with a structure block or Create\u2019s Schematic Table/Schematicannon.';
+  }catch(err){
+    statusEl.style.color = 'var(--danger-bright)';
+    if(err && err.message === 'no-compression-stream'){
+      statusEl.textContent = 'Your browser lacks in-browser gzip support needed for .nbt export \u2014 try a recent Chrome, Edge, or Firefox.';
+    } else {
+      statusEl.textContent = 'Export failed: ' + (err && err.message ? err.message : err);
+    }
+  }
+});
+
+/* ================= refresh cycle ================= */
+function refreshAll(){
+  renderSeqList();
+  drawAll();
+  updateNbtSizeHint();
+}
+
+/* ================= init ================= */
+renderPaletteFields();
+state.sequence = generateSequence(state.numTracks, state.numPlatforms);
+refreshAll();
+
+window.addEventListener('resize', ()=>{ drawAll(); });
+
+})();
+</script>
+</body>
+</html>
